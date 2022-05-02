@@ -10,7 +10,7 @@ void task_func(int *arg)
 
 int main()
 {
-    // ´´½¨Ïß³Ì³Ø
+    // åˆ›å»ºçº¿ç¨‹æ± 
     ThreadPool pool(3, 10);
     for (int i = 0; i < 20; ++i)
     {
