@@ -37,6 +37,7 @@ ThreadPool::ThreadPool(int min, int max) : m_minNum(min), m_maxNum(max) {
 
 ThreadPool::~ThreadPool() {
     m_shutdown = true;
+    pthread_join(m_managerID, NULL);
     for (int i = 0; i < m_liveNum; ++i) {
         std::cout << "the thread poll is closing, the live thread is exiting..." << std::endl;
         pthread_cond_signal(&m_notEmpty);
