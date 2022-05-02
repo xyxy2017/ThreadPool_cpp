@@ -28,7 +28,7 @@ ThreadPool::ThreadPool(int min, int max) : m_minNum(min), m_maxNum(max) {
         // 以最小数量创建线程
         for (int i = 0; i < m_minNum; ++i) {
             pthread_create(&m_threadIDs[i], NULL, worker, this);
-            std::cout << "创建子线程， ID:" << m_threadIDs[i] << std::endl;
+            std::cout << "create thread, ID:" << m_threadIDs[i] << std::endl;
         }
         pthread_create(&m_managerID, NULL, manager, this);
     } while (0);
@@ -38,10 +38,10 @@ ThreadPool::ThreadPool(int min, int max) : m_minNum(min), m_maxNum(max) {
 ThreadPool::~ThreadPool() {
     m_shutdown = true;
     for (int i = 0; i < m_liveNum; ++i) {
-        std::cout << "the threadpoll is closing, the live thread is exiting..." << std::endl;
+        std::cout << "the thread poll is closing, the live thread is exiting..." << std::endl;
         pthread_cond_signal(&m_notEmpty);
     }
-    // sleep(1);
+    sleep(1);   // for live thread exit
 
     if (m_taskQ)    delete m_taskQ;
     if (m_threadIDs)    delete[] m_threadIDs;
@@ -63,7 +63,7 @@ void* ThreadPool::worker(void* arg) {
         // 访问线程池资源，上锁
         pthread_mutex_lock(&pool->m_lock);
         // 判断任务队列是否为空，或是否线程池关闭
-        while (pool->m_taskQ->task_number() == 0 && !pool->m_shutdown) {
+        while (!pool->m_shutdown && pool->m_taskQ->task_number() <= 0) {
             std::cout << "thread:" << pthread_self() << " waiting..." << std::endl;
             // 阻塞线程 
             pthread_cond_wait(&pool->m_notEmpty, &pool->m_lock);
@@ -145,7 +145,7 @@ void ThreadPool::thread_exit() {
     pthread_t tid = pthread_self();
     for (int i = 0; i < m_maxNum; ++i) {
         if (m_threadIDs[i] == tid) {
-            std::cout << "thread id:" << tid << " exiting... leaving " << m_liveNum << " threads" << std::endl;
+            std::cout << "thread:" << tid << " exiting... leaving " << m_liveNum << " threads" << std::endl;
             m_threadIDs[i] = 0;
             break;
         }
