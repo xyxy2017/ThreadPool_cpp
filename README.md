@@ -1,4 +1,8 @@
 # build
-`make`
+```shell
+make
+```
 # run
-`./test`
+```shell
+./test
+```
