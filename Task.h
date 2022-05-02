@@ -1,12 +1,12 @@
 #ifndef __TASK__
 #define __TASK__
-using callback = void(*)(void*);
+using callback = void(*)(int*);
 struct Task {
     Task() : function(nullptr), arg(nullptr) {};
-    Task(callback f, void* arg) : function(f), arg(arg) {};
+    Task(callback f, int* arg) : function(f), arg(arg) {};
     ~Task() = default;
 
     callback function;
-    void* arg;
+    int* arg;
 };
 #endif

@@ -38,8 +38,10 @@ ThreadPool::ThreadPool(int min, int max) : m_minNum(min), m_maxNum(max) {
 ThreadPool::~ThreadPool() {
     m_shutdown = true;
     for (int i = 0; i < m_liveNum; ++i) {
+        std::cout << "the threadpoll is closing, the live thread is exiting..." << std::endl;
         pthread_cond_signal(&m_notEmpty);
     }
+    // sleep(1);
 
     if (m_taskQ)    delete m_taskQ;
     if (m_threadIDs)    delete[] m_threadIDs;
@@ -75,6 +77,7 @@ void* ThreadPool::worker(void* arg) {
             }
         }
         if (pool->m_shutdown) {
+            pool->m_liveNum--;
             pthread_mutex_unlock(&pool->m_lock);
             pool->thread_exit();
         }
@@ -99,7 +102,7 @@ void* ThreadPool::worker(void* arg) {
 
 void* ThreadPool::manager(void* arg) {
     ThreadPool* pool = static_cast<ThreadPool*>(arg);
-    while (pool->m_shutdown) {
+    while (!pool->m_shutdown) {
         sleep(5);
         pthread_mutex_lock(&pool->m_lock);
         int queue_size = pool->m_taskQ->task_number();
@@ -130,6 +133,7 @@ void* ThreadPool::manager(void* arg) {
             pool->m_exitNum = NUMBER;
             pthread_mutex_unlock(&pool->m_lock);
             for (int i = 0; i < NUMBER; ++i) {
+                std::cout << "the free thread exiting..." << std::endl;
                 pthread_cond_signal(&pool->m_notEmpty);
             }
         }
@@ -141,7 +145,7 @@ void ThreadPool::thread_exit() {
     pthread_t tid = pthread_self();
     for (int i = 0; i < m_maxNum; ++i) {
         if (m_threadIDs[i] == tid) {
-            std::cout << "thread id:" << tid << " exiting..." << std::endl;
+            std::cout << "thread id:" << tid << " exiting... leaving " << m_liveNum << " threads" << std::endl;
             m_threadIDs[i] = 0;
             break;
         }

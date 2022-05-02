@@ -1,9 +1,9 @@
 #include "ThreadPool.h"
 #include <iostream>
 
-void task_func(void *arg)
+void task_func(int *arg)
 {
-    int num = *(int *)arg;
+    int num = *arg;
     printf("thread:%ld is working, number = %d\n", pthread_self(), num);
     sleep(1);
 }
