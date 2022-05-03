@@ -13,12 +13,13 @@ void TaskQueue::add_task(Task &t) {
     pthread_mutex_unlock(&m_mutex);
 }
 
+/*
 void TaskQueue::add_task(callback f, int* arg) {
     pthread_mutex_lock(&m_mutex);
     m_queue.push(Task(f, arg));
-    // m_queue.push(f, arg);
     pthread_mutex_unlock(&m_mutex);
 }
+*/
 
 Task TaskQueue::take_task() {
     Task t;

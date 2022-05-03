@@ -91,8 +91,8 @@ void* ThreadPool::worker(void* arg) {
         // 执行任务
         std::cout << "thread:" << pthread_self() << " is working..." << std::endl;
         t.function(t.arg);
-        delete (int*)t.arg;
-        t.arg = nullptr;
+        // delete (int*)t.arg;
+        // t.arg = nullptr;
         // 执行完毕
         std::cout << "thread:" << pthread_self() << " end working..." << std::endl;
         pthread_mutex_lock(&pool->m_lock);

@@ -11,7 +11,7 @@ public:
 
     // add task to task m_queue
     void add_task(Task &t);
-    void add_task(callback f, int* arg);
+    // void add_task(callback f, int* arg);
     
     // take a task from m_queue
     Task take_task();
