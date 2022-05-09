@@ -13,14 +13,14 @@ ThreadPool::ThreadPool(int min, int max) : m_minNum(min), m_maxNum(max) {
         // 分配线程数组内存
         m_threadIDs = new pthread_t[m_maxNum];
         if (m_threadIDs == nullptr) {
-            std::cout << "new m_threadIDs failed..." << std::endl;
+            printf("new m_threadIDs failed...\n");
             break; 
         }
         memset(m_threadIDs, 0, m_maxNum * sizeof(pthread_t));
         // 初始化线程锁和条件变量
         if (pthread_mutex_init(&m_lock, NULL) != 0 || 
             pthread_cond_init(&m_notEmpty, NULL) != 0) {
-            std::cout << "init mutex or cond failed..." << std::endl;
+            printf("init mutex or cond failed...\n");
             break;
         }
 
@@ -28,7 +28,7 @@ ThreadPool::ThreadPool(int min, int max) : m_minNum(min), m_maxNum(max) {
         // 以最小数量创建线程
         for (int i = 0; i < m_minNum; ++i) {
             pthread_create(&m_threadIDs[i], NULL, worker, this);
-            std::cout << "create thread, ID:" << m_threadIDs[i] << std::endl;
+            printf("create thread, ID: %ld\n", m_threadIDs[i]);
         }
         pthread_create(&m_managerID, NULL, manager, this);
     } while (0);
@@ -38,12 +38,15 @@ ThreadPool::ThreadPool(int min, int max) : m_minNum(min), m_maxNum(max) {
 ThreadPool::~ThreadPool() {
     m_shutdown = true;
     pthread_join(m_managerID, NULL);
+    // close worker threads
+    printf("the thread poll is closing, the live thread is exiting...\n");
     int liveNum = m_liveNum;
     for (int i = 0; i < liveNum; ++i) {
-        std::cout << "the thread poll is closing, the live thread is exiting..." << std::endl;
         pthread_cond_signal(&m_notEmpty);
     }
-    sleep(2);   // for live thread exit
+    for (int i = 0; i < liveNum; ++i) {
+        pthread_join(m_threadIDs[i], NULL);
+    }
 
     if (m_taskQ)    delete m_taskQ;
     if (m_threadIDs)    delete[] m_threadIDs;
@@ -66,7 +69,8 @@ void* ThreadPool::worker(void* arg) {
         pthread_mutex_lock(&pool->m_lock);
         // 判断任务队列是否为空，或是否线程池关闭
         while (!pool->m_shutdown && pool->m_taskQ->task_number() <= 0) {
-            std::cout << "thread:" << pthread_self() << " waiting..." << std::endl;
+            // std::cout << "thread:" << pthread_self() << " waiting..." << std::endl;
+            printf("thread: %ld waiting...\n", pthread_self());
             // 阻塞线程 
             pthread_cond_wait(&pool->m_notEmpty, &pool->m_lock);
             if (pool->m_exitNum > 0) {
@@ -89,12 +93,12 @@ void* ThreadPool::worker(void* arg) {
         pthread_mutex_unlock(&pool->m_lock);
         
         // 执行任务
-        std::cout << "thread:" << pthread_self() << " is working..." << std::endl;
+        // std::cout << "thread:" << pthread_self() << " is working..." << std::endl;
+        printf("thread: %ld is working...\n", pthread_self());
         t.function(t.arg);
-        // delete (int*)t.arg;
-        // t.arg = nullptr;
         // 执行完毕
-        std::cout << "thread:" << pthread_self() << " end working..." << std::endl;
+        // std::cout << "thread:" << pthread_self() << " end working..." << std::endl;
+        printf("thread: %ld end working...\n", pthread_self());
         pthread_mutex_lock(&pool->m_lock);
         pool->m_busyNum--;
         pthread_mutex_unlock(&pool->m_lock);
@@ -123,7 +127,8 @@ void* ThreadPool::manager(void* arg) {
                     pthread_create(&pool->m_threadIDs[i], NULL, worker, pool);
                     ++num;
                     ++pool->m_liveNum;
-                    std::cout << "manager: add a live thread, the live thread is " << pool->m_liveNum << std::endl;
+                    // std::cout << "manager: add a live thread, the live thread is " << pool->m_liveNum << std::endl;
+                    printf("manager: add a live thread, the live thread is %d\n", pool->m_liveNum);
                 }
             }
             pthread_mutex_unlock(&pool->m_lock);
@@ -135,7 +140,8 @@ void* ThreadPool::manager(void* arg) {
             pool->m_exitNum = NUMBER;
             pthread_mutex_unlock(&pool->m_lock);
             for (int i = 0; i < NUMBER; ++i) {
-                std::cout << "the free thread exiting..." << std::endl;
+                // std::cout << "the free thread exiting..." << std::endl;
+                printf("the free thread exiting...\n");
                 pthread_cond_signal(&pool->m_notEmpty);
             }
         }
@@ -147,7 +153,8 @@ void ThreadPool::thread_exit() {
     pthread_t tid = pthread_self();
     for (int i = 0; i < m_maxNum; ++i) {
         if (m_threadIDs[i] == tid) {
-            std::cout << "thread:" << tid << " exiting... leaving " << m_liveNum << " threads" << std::endl;
+            // std::cout << "thread:" << tid << " exiting... leaving " << m_liveNum << " threads" << std::endl;
+            printf("thread: %ld exiting... Leaving %d threads\n", tid, m_liveNum);
             m_threadIDs[i] = 0;
             break;
         }
